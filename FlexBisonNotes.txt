@@ -1,0 +1,136 @@
+Flex:
+
+Three parts demarcated by two %% lines
+
+Skeleton :
+_____________________________________________________________
+%{
+    /* Headers */
+%}
+
+%%
+
+    /* Rules */
+
+%%
+
+int yywrap() {
+    return 1;
+}
+
+main()
+{
+    yylex();
+}
+_____________________________________________________________
+
+Some jargon:
+yylex(); // call in main to start the lexer
+yywrap(); // called by yylex() when it reaches the end of the file return 1 means success
+yytext; // the matched string (used in match statements)
+yylvall; // the value of the token (used in match statements) eg for numbers , yyval = atoi(yytext)
+Notes:
+* flex is .l file
+* int in int main is optional and so is yywrap()
+* headers aren't compulsory, declare globals there
+
+Some Pattern matching rules:
+* [a-z] matches any character between a and z
+* [^a-z] matches any character except a to z
+* [] denotes a class. for eg [aeiou] matches any vowel
+* '-' means range. for eg [a-z] matches any lowercase letter
+* '.' matches any character (except newline) (use it at last for default case)
+* [a-zA-Z] matches any letter
+* [a b] matches a, space and b (space is significant in class)
+* don't use unnecessary spaces in patterns -> might not give desired result
+* '\.','\-','\*' matches . , - and * respectively
+* Some predefined classes:
+    * '\s' matches any whitespace character
+    * '\S' matches any non-whitespace character
+    * '\d' matches any digit
+    * '\D' matches any non-digit
+    * '\w' matches any word character (letter, digit, underscore)
+    * '\W' matches any non-word character
+* Quantifiers:
+    * a? matches empty string or a
+    * a{3} matches "aaa"
+    * a{3,} matches "aaa", "aaaa", "aaaaa" etc
+    * a{3,5} matches "aaa", "aaaa", "aaaaa"
+
+* In case of ambiguity, longest match is chosen
+
+Compile Code:
+$ flex <filename>.l
+$ gcc lex.yy.c -lfl
+$ ./a.out
+
+___________________________________________________________________
+
+Bison:
+
+Three parts demarcated by two %% lines
+Grammar parsing by LALR(1) parser (BNF grammar)
+
+Skeleton:
+
+%{
+    /* Headers */
+%}
+
+%token <token_name> <token_name> <token_name> ...
+%token EOL
+
+%%
+
+    /* Rules */
+
+%%
+
+int main()
+{
+    yyparse();
+}
+
+int yyerror(char *s)
+{
+    printf("Error!! %s\n",s);
+}
+
+Some Notes:
+* Examples of Grammar productions:
+    * exp : factor { $$ = $1; }
+    | exp ADD factor { $$ = $1 + $3; }
+    | exp SUB factor { $$ = $1 - $3; }
+    ;
+
+    * calclist : /* empty string*/
+    | calclist exp EOL { printf("%d\n", $2); }
+    ; /* Note the semicolon */
+
+* %left and %right are used to resolve ambiguity , order of two %left will enfore precedence
+* %prec is used to resolve ambiguity in case of same precedence
+* which matching production rules, we can use $1, $2, $3, ... to access the values of the tokens and $$ to return the value of the production
+
+
+Linking Flex and Bison:
+* we need both .l and .y files to parse
+* we need to match tokens and return appropriate values as defined in .y file (using %token)
+* we need to call yyparse() in main
+* there is no main in .l file
+* we need to include "<filename>.tab.h" in .l file <filename> is the name of .y file
+
+Compile Code:
+$ bison -d <filename>.y
+$ flex <filename>.l
+$ gcc lex.yy.c <filename>.tab.c -o calc -lfl
+$ ./calc
+
+Some Other features(For incorporating variable assignment and use in calc)
+* use %union to define a union of all possible types (in .y file before %% of grammar along with tokens)
+    * eg. %union { char name[100]; int  val; } //this is for yylval
+* use %type to define the type of a token (in .y file before %% of grammar along with tokens)
+    * eg. %type <val> INT expr (make sure to define type for non terminals also)
+    * doing so enables us to use $$ and $2 directly instead of $<val>$ and $<name>2
+* now use yylval.val = atoi(yytext); // for numbers and
+          strcpy(yylval.name,yytext) // for vars in .l file to assign value to yylval
+* functions and structs are to be defined in {% %} along with #include macros

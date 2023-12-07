@@ -1,0 +1,7 @@
+MAIN [0] [0] [0]
+MOVE t0 1
+MOVE t1 2
+MOVE t2 PLUS t0 t1 
+PRINT t2
+END
+// NOTSPILLED
